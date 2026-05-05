@@ -38,6 +38,59 @@ sudo apt install -y \
     curl
 ```
 
+## Supported ROS 2 Distributions
+
+Each ROS 2 distribution targets exactly one Ubuntu LTS as a Tier 1 platform. Use the tables below to choose a value for the `-d` option of `ros2_clone_script.sh` and to make sure your host Ubuntu version matches.
+
+### Currently supported
+
+| ROS 2 Distribution | Release date | EOL date | Ubuntu (Tier 1) | Type |
+|---|---|---|---|---|
+| **Rolling Ridley** | continuous | - | Ubuntu 24.04 (Noble) | development |
+| **Kilted Kaiju** | May 23, 2025 | December 2026 | Ubuntu 24.04 (Noble) | non-LTS |
+| **Jazzy Jalisco** | May 23, 2024 | May 2029 | Ubuntu 24.04 (Noble) | LTS (5 years) |
+| **Humble Hawksbill** | May 23, 2022 | May 2027 | Ubuntu 22.04 (Jammy) | LTS (5 years) |
+
+### Upcoming
+
+| ROS 2 Distribution | Expected release | Expected EOL | Ubuntu (Tier 1) |
+|---|---|---|---|
+| **Lyrical Luth** | May 2026 | May 2031 | Ubuntu 24.04 (Noble) - LTS |
+
+### End-of-life
+
+| ROS 2 Distribution | Release date | EOL date | Ubuntu (Tier 1) |
+|---|---|---|---|
+| Iron Irwini | May 2023 | December 2024 | Ubuntu 22.04 (Jammy) |
+| Galactic Geochelone | May 2021 | December 2022 | Ubuntu 20.04 (Focal) |
+| Foxy Fitzroy | June 2020 | June 2023 | Ubuntu 20.04 (Focal) |
+| Eloquent Elusor | November 2019 | November 2020 | Ubuntu 18.04 (Bionic) |
+| Dashing Diademata | May 2019 | May 2021 | Ubuntu 18.04 (Bionic) |
+| Crystal Clemmys | December 2018 | December 2019 | Ubuntu 18.04 (Bionic) |
+| Bouncy Bolson | July 2018 | July 2019 | Ubuntu 18.04 (Bionic) |
+| Ardent Apalone | December 2017 | December 2018 | Ubuntu 16.04 (Xenial) |
+
+### Key rules
+
+- A new ROS 2 distribution is released every year on **May 23rd** (World Turtle Day).
+- Each ROS 2 release is supported on **exactly one Ubuntu LTS**.
+- **LTS** ROS 2 releases (even years, starting with Humble) are supported for **5 years**.
+- **Non-LTS** ROS 2 releases are supported for ~**18 months**.
+- Odd-year ROS 2 releases share the Ubuntu LTS of the previous year's LTS ROS 2 release.
+
+### Recommendation
+
+- New project → **Jazzy Jalisco on Ubuntu 24.04** (supported until May 2029).
+- Existing project / legacy code → **Humble Hawksbill on Ubuntu 22.04** (supported until May 2027).
+
+### References
+
+- [ROS 2 Distributions list](https://docs.ros.org/en/rolling/Releases.html)
+- [ROS 2 Platform EOL Policy](https://docs.ros.org/en/rolling/The-ROS2-Project/Platform-EOL-Policy.html)
+- [ROS 2 Release Schedule](https://docs.ros.org/en/rolling/The-ROS2-Project/Release-Schedule.html)
+- [REP 2000 - Target platforms per distribution](https://www.ros.org/reps/rep-2000.html)
+- [endoflife.date - ROS 2](https://endoflife.date/ros-2)
+
 ## Getting Started
 
 ### 1. Clone the Repository
