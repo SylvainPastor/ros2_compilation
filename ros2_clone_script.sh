@@ -48,17 +48,17 @@ show_help() {
     echo "  Useful for synchronizing with meta-ros Yocto builds."
     echo ""
     echo "Options:"
-    echo "  -d, --distro DISTRO      ROS2 distribution (humble, iron, jazzy, rolling)"
+    echo "  -d, --distro DISTRO      ROS2 distribution (humble, jazzy, kilted, rolling)"
     echo "  -r, --release RELEASE    Specific release tag (optional)"
     echo "  -t, --target DIR         Target directory (default: ros2_ws)"
     echo "  -c, --clean              Clean target directory before cloning"
     echo "  -h, --help               Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 -d humble                    # Latest Humble version"
-    echo "  $0 -d humble -r release/humble  # Specific Humble release"
-    echo "  $0 -d iron -t my_workspace      # Iron in custom workspace"
-    echo "  $0 -d humble -r 2023.04.17 -c   # Dated release with cleanup"
+    echo "  $0 -d jazzy                     # Latest Jazzy version (recommended LTS)"
+    echo "  $0 -d jazzy -r 20260128         # Specific Jazzy patch release (YYYYMMDD)"
+    echo "  $0 -d kilted -t my_workspace    # Kilted in custom workspace"
+    echo "  $0 -d humble -r 20260220 -c     # Dated patch release with cleanup"
     echo ""
     echo "Notes:"
     echo "  - For meta-ros synchronization, use the exact tag/commit from meta-ros"
@@ -131,7 +131,7 @@ check_requirements() {
 
 # Validate ROS2 distribution name
 validate_distro() {
-    local valid_distros=("humble" "iron" "jazzy" "rolling")
+    local valid_distros=("humble" "jazzy" "kilted" "rolling")
     
     if [[ -z "$DISTRO" ]]; then
         print_error "Distribution not specified. Use -d or --distro"
@@ -146,36 +146,63 @@ validate_distro() {
     fi
 }
 
-# Build the .repos file URL based on distribution and release
+# Build the list of candidate refs (branch/tag) to try.
+# The ros2/ros2 GitHub repo uses two tag conventions for patch releases:
+#   - newer convention (e.g. Jazzy):  release-<distro>-<date>  -> release-jazzy-20260128
+#   - older convention (e.g. Humble): <distro>-<date>          -> humble-20250331
+# So we try both and keep the first one that resolves to an existing ros2.repos.
 build_repos_url() {
-    local base_url="https://raw.githubusercontent.com/ros2/ros2"
-    
     if [[ -n "$RELEASE_TAG" ]]; then
-        REPOS_URL="${base_url}/${DISTRO}-${RELEASE_TAG}/ros2.repos"
+        if [[ "$RELEASE_TAG" =~ ^[0-9]{8}$ ]]; then
+            # Date-only argument: try both tag conventions
+            CANDIDATE_REFS=(
+                "release-${DISTRO}-${RELEASE_TAG}"
+                "${DISTRO}-${RELEASE_TAG}"
+            )
+        else
+            # Custom branch/tag passed verbatim by the user
+            CANDIDATE_REFS=("$RELEASE_TAG")
+        fi
     else
-        REPOS_URL="${base_url}/${DISTRO}/ros2.repos"
+        # No tag specified: use the distribution branch
+        CANDIDATE_REFS=("$DISTRO")
     fi
-    
-    print_info "Repos file URL: $REPOS_URL"
+
+    print_info "Candidate refs: ${CANDIDATE_REFS[*]}"
 }
 
-# Check if the .repos file exists at the specified URL
+# Check candidate URLs, pick the first one that returns 200, and set REPOS_URL
 check_repos_file() {
-    print_info "Checking .repos file existence..."
-    
-    if command -v curl &> /dev/null; then
-        if ! curl -s --head "$REPOS_URL" | head -n 1 | grep -q "200"; then
-            print_error "The .repos file does not exist at URL: $REPOS_URL"
-            exit 1
+    print_info "Looking up .repos file..."
+
+    local base_url="https://raw.githubusercontent.com/ros2/ros2"
+    local candidate_url
+
+    for ref in "${CANDIDATE_REFS[@]}"; do
+        candidate_url="${base_url}/${ref}/ros2.repos"
+        print_info "  Trying: $candidate_url"
+
+        if command -v curl &> /dev/null; then
+            if curl -s --head "$candidate_url" | head -n 1 | grep -q "200"; then
+                REPOS_URL="$candidate_url"
+                print_success ".repos file found (ref: ${ref})"
+                return 0
+            fi
+        elif command -v wget &> /dev/null; then
+            if wget -q --spider "$candidate_url"; then
+                REPOS_URL="$candidate_url"
+                print_success ".repos file found (ref: ${ref})"
+                return 0
+            fi
         fi
-    elif command -v wget &> /dev/null; then
-        if ! wget -q --spider "$REPOS_URL"; then
-            print_error "The .repos file does not exist at URL: $REPOS_URL"
-            exit 1
-        fi
-    fi
-    
-    print_success ".repos file found"
+    done
+
+    print_error "No .repos file found for distro='${DISTRO}' release='${RELEASE_TAG}'."
+    print_error "Tried the following URLs:"
+    for ref in "${CANDIDATE_REFS[@]}"; do
+        print_error "  - ${base_url}/${ref}/ros2.repos"
+    done
+    exit 1
 }
 
 # Prepare target directory for cloning
